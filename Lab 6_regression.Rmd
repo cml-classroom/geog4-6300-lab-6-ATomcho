@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r setup, message=FALSE, warning=FALSE}
 library(sf)
 library(tidyverse)
+library(tmap)
+library(ggplot2)
 ```
 
 **Overview:**
@@ -25,6 +27,8 @@ Let's import the dataset.
 
 ```{r}
 lab6_data<-st_read("data/aus_climate_inat.gpkg")
+
+tm_shape(lab6_data)+tm_polygons("ndvi_20_med")
 ```
 
 The dataset for this lab is a 1 decimal degree hexagon grid that has aggregate statistics for a number of variables:
@@ -48,70 +52,104 @@ We will start by looking at data for 2020.
 **Question 1** _Create histograms for NDVI, max temp., min temp., rain, and population, and water in 2020 as well as elevation. Based on these graphs, assess the normality of these variables._
 
 ```{r}
-#Code goes here.
+
+variables <-c("ndvi_20_med", "maxtemp_20_med", "mintemp_20_med", "rain_20_sum", "pop_20", "water_20_pct", "elev_med")
+
+for (var in variables) {
+  hist(lab6_data[[var]], main = paste("Histogram of", var), xlab = var, col = "grey", breaks = 30)}
+
+
 ```
 
-{Your assessment of the variables' normality goes here.}
+{Visually, all of these graphs appear to be skewed and not normal. Elevation is probably the closest to normal distribution. }
 
 **Question 2** _Use tmap to map these same variables using Jenks natural breaks as the classification method. For an extra challenge, use `tmap_arrange` to plot all maps in a single figure._
 
 ```{r}
+tmap_mode("plot")
+
+tm_list <- lapply(variables, function(var) {
+  tm_shape(lab6_data)+
+    tm_polygons(var,style = "jenks", palette = "viridis", title = var)+
+    tm_layout(legend.outside = TRUE)})
+
+tmap_arrange(plotlist = tm_list)
 
 ```
 
 
 **Question 3** _Based on the maps from question 3, summarise major patterns you see in the spatial distribution of these data from any of your variables of interest. How do they appear to be associated with the NDVI variable?_
 
-{Your response here.}
+{The ndvi(vegetation) is highest around the edges of australia, primarily on the southeast coast. This appears to have a similar pattern as the rain map and population. The temperature has a distinct pattern of warmer to colder from the north to south, respectively.}
 
 **Question 4** _Create univariate models for each of the variables listed in question 1, with NDVI in 2020 as the dependent variable. Print a summary of each model. Write a summary of those results that indicates the direction, magnitude, and significance for each model coefficient._
 
 ```{r}
+result<-lapply(variables, function(var){
+  model<-lm(ndvi_20_med ~ lab6_data [[var]], data = lab6_data)
+  summary(model)})
 
+result
 ```
 
-{Discussion here}
+{All had significant findings except for water_20_pct (which also had the lowest r squared value). rain_20_sum had the highest r-squared value at 0.43. Max temp, mintemp, and water_pct have a negative effect on vegetation. Rain, pop, and elevation had positive effect on vegetation. }
 
 **Question 5** _Create a multivariate regression model with the variables of interest, choosing EITHER max or min temperature (but not both) You may also choose to leave out any variables that were insignificant in Q4. Use the univariate models as your guide. Call the results._
 
 ```{r}
-#Code goes here
+multi_reg_model<-lm(ndvi_20_med ~ maxtemp_20_med + rain_20_sum + pop_20 + elev_med,data = lab6_data)
+
+summary(multi_reg_model)
 ```
 
 **Question 6** _Summarize the results of the multivariate model. What are the direction, magnitude, and significance of each coefficient? How did it change from the univariate models you created in Q4 (if at all)? What do the R2 and F-statistic values tell you about overall model fit?_
 
-{Response goes here}
+{All variables are statistically significant. maxtemp is the only negative relationship. There is a relatively high r-squared value of 0.64 which is much higher than any of the individual variables in q4. The high r-squared and f-statistic values tell us that this is a good overall model fit. }
 
 **Question 7** _Use a histogram and a map to assess the normality of residuals and any spatial autocorrelation. Summarise any notable patterns that you see._
 
 ```{r}
-#Code goes here
+lab6_data$residuals <-residuals(multi_reg_model)
+
+residuals <- as.numeric(residuals(multi_reg_model))
+
+hist(residuals, main = "Histogram of Residuals", xlab = "Residuals", col = "lightgrey",breaks = 30)
+
+tm_shape(lab6_data)+
+  tm_polygons("residuals", style = "jenks", palette = "RdBu",  midpoint = 0, title = "Residuals") +
+  tm_layout(legend.outside = TRUE)
+
+tmap_mode("view")
 ```
 
-{Summary goes here}
+{The residuals are relatively evenly spreadout throughout. The red (lowest) residuals are found along the north and south coast, with few on the east and west coast. The orange residuals seem to be clustered around the middle region.}
 
 **Question 8** _Assess any issues with multicollinearity or heteroskedastity in this model using the techniques shown in class. Run the appropriate tests and explain what their results show you._
 
 ```{r}
-#Code goes here
+library(car)
+
+vif(multi_reg_model)
+    
+ncvTest(multi_reg_model)
 ```
 
-{Interpretation goes here}
+{The vif values are from 1.009-1.17 indicating no multicollinearity. The statisically significant pvalue indicates evidence of heterskedasity. }
 
 **Question 9** _How would you summarise the results of this model in a sentence or two? In addition, looking at the full model and your diagnostics, do you feel this is a model that provides meaningful results? Explain your answer._
 
-```{r}
-Discussion here
+```
+{Maxtemp, rain, pop, and elevation have an effect on ndvi. I feel this model provides meaningful results due to the statistical significance and the relatively high r-squared value. However, the heteroskedacity means this model may need revisiting. }
 ```
 
 
 **Disclosure of assistance:** _Besides class materials, what other sources of assistance did you use while completing this lab? These can include input from classmates, relevant material identified through web searches (e.g., Stack Overflow), or assistance from ChatGPT or other AI tools. How did these sources support your own learning in completing this lab?_
 
-{Response here.}
+{chatgpt helps me diagnose when an error occurs such as not having a certain package running (library()). }
 
 **Lab reflection:** _How do you feel about the work you did on this lab? Was it easy, moderate, or hard? What were the biggest things you learned by completing it?_
 
-{Discussion here.}
+{I felt moderate about this lab. The class scripts and chatgpt helped with completing code. The in class slides helped with interpreting results. }
 
 
 **Challenge question**
@@ -130,6 +168,15 @@ Create a first difference model. To do that, subtract the values in 2000 from th
 The animal data included in this dataset is an example of count data, and usually we would use a Poisson or similar model for that purpose. Let's try it with regular OLS regression though. Create two regression models to assess how the counts of two different animals (say, koalas and emus) are associated with at least three of the environmental/climatological variables given above. Be sure to use the same independent variables in each model. Interpret the results of each model and then explain the importance of any differences in the model coefficients between them, focusing on direction, magnitude, and significance.
 
 ```{r}
+koala_model<-lm(Koala ~ maxtemp_20_med + rain_20_sum +pop_20,data = lab6_data)
 
+emu<-lm(Common.emu ~ maxtemp_20_med + rain_20_sum +pop_20,data = lab6_data)
+
+summary(koala_model)
+summary(emu)
 ```
+{For koalas, the r-squared is low at 0.11. There is a positive correlation between the three variables. Only population has a statiscally significant p-value.
+For emus, max temp and population had signifcant p-values. max temp had a negative correlation while the other two were positive. The r-squared value was 0.10. Both animal models did not have a high R-squared value. Both animals had a dependence on population but only emus had a statisically signifcant relationship with max temp. rain was not statistically significant for either animal. }
+
+library(knitr)
 
