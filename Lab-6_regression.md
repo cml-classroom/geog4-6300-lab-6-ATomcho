@@ -8,6 +8,7 @@ library(sf)
 library(tidyverse)
 library(tmap)
 library(ggplot2)
+library(broom)
 ```
 
 **Overview:** This lab focuses on regression techniques. You’ll be
@@ -148,7 +149,7 @@ result<-lapply(variables, function(var){
     ## unreliable
 
 ``` r
-result
+print(result)
 ```
 
     ## [[1]]
@@ -297,11 +298,30 @@ result
     ## Multiple R-squared:  0.05064,    Adjusted R-squared:  0.04931 
     ## F-statistic: 38.08 on 1 and 714 DF,  p-value: 1.136e-09
 
-{All had significant findings except for water_20_pct (which also had
-the lowest r squared value). rain_20_sum had the highest r-squared value
-at 0.43. Max temp, mintemp, and water_pct have a negative effect on
-vegetation. Rain, pop, and elevation had positive effect on vegetation.
-}
+{\*REVISED:  
+2)Max temp:For one degree max temp increase, there is a slight negative
+effect (-0.013) on the vegetation index. This was a signifcant value
+(p\<0.0001) and the r-squared was 0.21. 3)Min temp:For one degree min
+temp increase, there is also a similar slight negative effect (-0.012)
+on the vegetation index. This was a significant value (p\<0.0001) and
+the r-squared was 0.14. 4)Rainfall: As rain fall went up by 1mm, there
+was a positive effect on vegetation index (9.12e-7). This was a
+signifcant value (p\<0.0001) and the r-squared was 0.43 indicating a
+relatively strong relationship. 5)Population:As population went up by
+one, the vegetation index would increase by 1.5e-6. This was a
+signifcant value (p\<0.0001) and the r-squared was 0.13. 6)% of land
+covered by water: As percent of land covered by water went up by 1, the
+vegetation index went down 0.18. This was not a signifcant result
+(p\>0.05) adn the r-squared was minimal at 0.002. 7)Median elevation: As
+median elevation went up by 1 meter, the vegation index increased by
+1.787e-4. This was a signifcant value (p\<0.0001) and the r-squared was
+small at 0.05.
+
+\*original: All had significant findings except for water_20_pct (which
+also had the lowest r squared value). rain_20_sum had the highest
+r-squared value at 0.43. Max temp, mintemp, and water_pct have a
+negative effect on vegetation. Rain, pop, and elevation had positive
+effect on vegetation. }
 
 **Question 5** *Create a multivariate regression model with the
 variables of interest, choosing EITHER max or min temperature (but not
@@ -343,9 +363,22 @@ are the direction, magnitude, and significance of each coefficient? How
 did it change from the univariate models you created in Q4 (if at all)?
 What do the R2 and F-statistic values tell you about overall model fit?*
 
-{All variables are statistically significant. maxtemp is the only
-negative relationship. There is a relatively high r-squared value of
-0.64 which is much higher than any of the individual variables in q4.
+{\*REVISED: 1) Max temp: Signifcant (p\<0.05); As max temp increases 1,
+vegetation index decreases by 1.1e-2. This is a smaller value than in
+Q4. 2)Rainfall: Signifcant (p\<0.05); As rainfall increased by 1mm,
+vegetation index increased by 8.46e-7. This is slightly smaller but
+almost the exact same as Q4. 3)Population:Signifcant (p\<0.05); As
+population increased by 1, vegetation index increased by 2.86e-7. This
+decreased from Q4. 4)Median Elevation:Signifcant (p\<0.05); As median
+elevation increased by 1 meter, vegetation index increased by 1.23e-4.
+This is slightly smaller than Q4. The r-squared value of 0.64 shows that
+this is a relatively strong relationship, compared to the individual
+coefficients in Q4. The high f-statistic of 315.5 and p-value \< 2.2e-16
+tells us this model is a good predictor of vegetation index.
+
+\*original: All variables are statistically significant. maxtemp is the
+only negative relationship. There is a relatively high r-squared value
+of 0.64 which is much higher than any of the individual variables in q4.
 The high r-squared and f-statistic values tell us that this is a good
 overall model fit. }
 
@@ -457,6 +490,10 @@ results in the same ways you did above. Also chart and map the residuals
 to assess model error. Finally, write a short section that summarises
 what, if anything, this model tells you.
 
+``` r
+#chose option 2
+```
+
 \#Option 2 The animal data included in this dataset is an example of
 count data, and usually we would use a Poisson or similar model for that
 purpose. Let’s try it with regular OLS regression though. Create two
@@ -523,13 +560,21 @@ summary(emu)
     ## Multiple R-squared:  0.1048, Adjusted R-squared:  0.101 
     ## F-statistic: 27.78 on 3 and 712 DF,  p-value: < 2.2e-16
 
-{For koalas, the r-squared is low at 0.11. There is a positive
-correlation between the three variables. Only population has a
-statiscally significant p-value. For emus, max temp and population had
-signifcant p-values. max temp had a negative correlation while the other
-two were positive. The r-squared value was 0.10. Both animal models did
-not have a high R-squared value. Both animals had a dependence on
-population but only emus had a statisically signifcant relationship with
-max temp. rain was not statistically significant for either animal. }
+{For koala model, the r-squared is 0.11, with an f-statistic of 29.28,
+and p-value\<0.0001 indicating a good overall fit. There is a positive
+correlation between the three variables (max temp = 7.5e-1, rainfall =
+9.6e-5, population = 2.6e-3). Only population has a statiscally
+significant p-value (p\<0.0001).
+
+For emu model, the f-statistic 27.78 and p-value \<0.0001 indicate a
+good overall fit. Similar to koalas, the r-squared value was 0.10. Max
+temp and population had signifcant p-values (p\<0.001). Max temp had a
+negative correlation (-2.1) while the other two were positive (rainfall
+= 1.6e-6, population = 1.27e-4).
+
+Both animal models had similarly low R-squared values. Both animals had
+a dependence on population (higher effect on koalas) but only emus had a
+statisically signifcant relationship with max temp. Rainfall was not
+statistically significant for either animal. }
 
 library(knitr)
